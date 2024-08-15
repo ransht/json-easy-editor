@@ -4,58 +4,157 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JSON Viewer</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/material-darker.min.css">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f4f4f4;
+            background-color: #f8f9fa;
+            animation: fadeIn 1.5s ease-in-out;
         }
+
         .container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background-color: #fff;
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            width: 90%;
+            margin-top: 50px;
+            animation: slideIn 1s ease-out;
         }
+
+        .card {
+            transform: translateY(-20px);
+            opacity: 0;
+            animation: cardEntrance 1.2s forwards;
+        }
+
+        @keyframes cardEntrance {
+            0% {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
         .CodeMirror {
             width: 100%;
             height: 300px;
-            margin-bottom: 10px;
             font-family: monospace;
+            margin-bottom: 20px;
+            transition: box-shadow 0.3s ease-in-out;
+            font-size: 16px; /* Font size for CodeMirror editor */
         }
-        select {
+
+        .CodeMirror-focused {
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+        }
+
+        .btn {
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+        }
+
+        .btn-primary:hover {
+            background-color: #0069d9;
+        }
+
+        .btn-warning:hover {
+            background-color: #e0a800;
+        }
+
+        .btn-success:hover {
+            background-color: #218838;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(20px); }
+            to { transform: translateY(0); }
+        }
+
+        /* Loader styles */
+        #loader, #pageLoader {
+            position: fixed;
+            z-index: 1000;
+            width: 50px;
+            height: 50px;
+            margin: -25px 0 0 -25px;
+            border: 8px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 8px solid #3498db;
+            animation: spin 1s linear infinite;
+        }
+
+        #pageLoader {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <textarea id="jsonInput" placeholder="Paste JSON here..."></textarea>
-        <select id="jsonProperty">
-            <option value="" disabled selected>Select JSON property...</option>
-        </select>
-        <textarea id="output" ></textarea>
-    <button id="isOnEdit" onclick="save()"> Update JSON</button>
+    <!-- Page loader -->
+    <div id="pageLoader">
+        <div id="loader"></div>
+    </div>
 
+    <div class="container">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">JSON Viewer</h4>
+            </div>
+            <div class="card-body">
+                <!-- Loader for fetching data -->
+                <div id="fetchLoader"></div>
+                
+                <div class="form-group">
+                    <textarea id="jsonInput" placeholder="Paste JSON here..." class="form-control"></textarea>
+                </div>
+                <div class="form-group">
+                    <select id="jsonProperty" class="form-control">
+                        <option value="" disabled selected>Select JSON property...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <textarea id="output" class="form-control" placeholder="Selected property value will appear here..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="col">
+                        <button id="loadJson" onclick="loadJson()" class="btn btn-primary btn-block">Load JSON from API</button>
+                    </div>
+                    <div class="col">
+                        <button id="isOnEdit" onclick="save()" class="btn btn-warning btn-block">Update JSON</button>
+                    </div>
+                    <div class="col">
+                        <button id="sendJson" onclick="sendJson()" class="btn btn-success btn-block">Send JSON via PUT</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
 
-const propertySelect = document.getElementById('jsonProperty');
+        const propertySelect = document.getElementById('jsonProperty');
         const editor = CodeMirror.fromTextArea(document.getElementById('jsonInput'), {
             lineNumbers: true,
             mode: 'application/json',
@@ -68,8 +167,29 @@ const propertySelect = document.getElementById('jsonProperty');
             theme: 'material-darker',
         });
 
-        function save() {
+        function loadJson() {
+            const url = 'https://service-catalog-dev-infra.internal.tenbis.cloud/api/Configuration/Analyzer%3AAssistants%3APrompts2/label/Local?secret=zzzqqqaaa12x&api-version=1';
+            showPageLoader();
 
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    editor.setValue(data);
+                })
+                .catch(error => {
+                    console.error('There has been a problem with your fetch operation:', error);
+                })
+                .finally(() => {
+                    hidePageLoader();
+                });
+        }
+
+        function save() {
             if (propertySelect && propertySelect.value) {
                 const jsonInput = editor.getValue();
                 var json = JSON.parse(jsonInput);
@@ -77,7 +197,38 @@ const propertySelect = document.getElementById('jsonProperty');
                 json[propertySelect.value] = updatedValue;
                 editor.setValue(JSON.stringify(json, null, 2));
             }
-        };
+        }
+
+        function sendJson() {
+            const url = 'https://service-catalog-dev-infra.internal.tenbis.cloud/api/Configuration/Analyzer%3AAssistants%3APrompts2?secret=zzzqqqaaa12x&label=Local&api-version=1';
+            const jsonString = JSON.stringify( editor.getValue());
+
+            showPageLoader();
+
+            fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: jsonString
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok ' + response.statusText);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Success:', data);
+                alert('JSON sent successfully!');
+            })
+            .catch(error => {
+                console.error('There has been a problem with your fetch operation:', error);
+            })
+            .finally(() => {
+                hidePageLoader();
+            });
+        }
 
         editor.on('change', function() {
             try {
@@ -109,7 +260,7 @@ const propertySelect = document.getElementById('jsonProperty');
         });
 
         function populatePropertySelect(jsonObject) {
-            propertySelect.innerHTML = '<option value="" disabled selected>Select JSON property...</option>';
+                propertySelect.innerHTML = '<option value="" disabled selected>Select JSON property...</option>';
             Object.keys(jsonObject).forEach(key => {
                 const option = document.createElement('option');
                 option.value = key;
@@ -118,16 +269,19 @@ const propertySelect = document.getElementById('jsonProperty');
             });
         }
 
-        function stringToCodeMirrorFormatted(text) {
-    // Assuming CodeMirror uses <br> for line breaks
-    return text.replace(/\n/g, '<br>');
-}
+        function showPageLoader() {
+            document.getElementById('pageLoader').style.display = 'block';
+        }
 
-// Function to convert formatted text with line breaks for CodeMirror back to a string
-function codeMirrorFormattedToString(formattedText) {
-    // Assuming CodeMirror uses <br> for line breaks
-    return formattedText.replace(/<br>/g, '\n');
-}
+        function hidePageLoader() {
+            document.getElementById('pageLoader').style.display = 'none';
+        }
+
+        // Initialization on page load
+        window.onload = function() {
+            hidePageLoader(); // Ensure page loader is hidden initially
+        };
+
     </script>
 </body>
 </html>
