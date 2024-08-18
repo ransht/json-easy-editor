@@ -40,12 +40,22 @@
             height: 300px;
             font-family: monospace;
             margin-bottom: 20px;
-            transition: box-shadow 0.3s ease-in-out;
-            font-size: 16px; /* Font size for CodeMirror editor */
+            transition: box-shadow 0.3s ease-in-out, height 0.3s ease-in-out;
+            font-size: 16px;
         }
 
         .CodeMirror-focused {
             box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+        }
+
+        .CodeMirror-fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            background-color: #2b2b2b;
         }
 
         .btn {
@@ -78,7 +88,6 @@
             to { transform: translateY(0); }
         }
 
-        /* Loader styles */
         #loader, #pageLoader {
             position: fixed;
             z-index: 1000;
@@ -153,7 +162,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
-
         const propertySelect = document.getElementById('jsonProperty');
         const editor = CodeMirror.fromTextArea(document.getElementById('jsonInput'), {
             lineNumbers: true,
@@ -201,7 +209,7 @@
 
         function sendJson() {
             const url = 'https://service-catalog-dev-infra.internal.tenbis.cloud/api/Configuration/Analyzer%3AAssistants%3APrompts2?secret=zzzqqqaaa12x&label=Local&api-version=1';
-            const jsonString = JSON.stringify( editor.getValue());
+            const jsonString = JSON.stringify(editor.getValue());
 
             showPageLoader();
 
@@ -260,7 +268,7 @@
         });
 
         function populatePropertySelect(jsonObject) {
-                propertySelect.innerHTML = '<option value="" disabled selected>Select JSON property...</option>';
+            propertySelect.innerHTML = '<option value="" disabled selected>Select JSON property...</option>';
             Object.keys(jsonObject).forEach(key => {
                 const option = document.createElement('option');
                 option.value = key;
@@ -276,6 +284,25 @@
         function hidePageLoader() {
             document.getElementById('pageLoader').style.display = 'none';
         }
+
+        // Toggle full-screen mode on double-click
+        outputEditor.on('dblclick', function() {
+            if (outputEditor.getWrapperElement().classList.contains('CodeMirror-fullscreen')) {
+                outputEditor.getWrapperElement().classList.remove('CodeMirror-fullscreen');
+            } else {
+                outputEditor.getWrapperElement().classList.add('CodeMirror-fullscreen');
+            }
+            outputEditor.refresh(); // Refresh editor to adjust to new size
+        });
+
+        // Keyboard shortcut (F11) for full-screen mode
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F1') {
+                e.preventDefault();
+                outputEditor.getWrapperElement().classList.toggle('CodeMirror-fullscreen');
+                outputEditor.refresh(); // Refresh editor to adjust to new size
+            }
+        });
 
         // Initialization on page load
         window.onload = function() {
