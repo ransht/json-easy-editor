@@ -1,12 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JSON Viewer</title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/material-darker.min.css">
+    
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/material-darker.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.12.4/dist/sweetalert2.all.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.12.4/dist/sweetalert2.min.css" rel="stylesheet">
+
     <style>
         body {
             background-color: #f8f9fa;
@@ -29,6 +36,7 @@
                 transform: translateY(-20px);
                 opacity: 0;
             }
+
             100% {
                 transform: translateY(0);
                 opacity: 1;
@@ -57,15 +65,16 @@
             z-index: 9999;
             background-color: #2b2b2b;
         }
+
         .CodeMirror-fullscreen {
-    position: fixed;
-    top: -20px;
-    left: -17.1em;
-    width: 110.1em;
-    height: 150%;
-    z-index: 9999;
-    background-color: #2b2b2b;
-}
+            position: fixed;
+            top: -20px;
+            left: -17.1em;
+            width: 110.1em;
+            height: 150%;
+            z-index: 9999;
+            background-color: #2b2b2b;
+        }
 
         .btn {
             transition: transform 0.2s, background-color 0.2s;
@@ -88,16 +97,27 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         @keyframes slideIn {
-            from { transform: translateY(20px); }
-            to { transform: translateY(0); }
+            from {
+                transform: translateY(20px);
+            }
+
+            to {
+                transform: translateY(0);
+            }
         }
 
-        #loader, #pageLoader {
+        #loader,
+        #pageLoader {
             position: fixed;
             z-index: 1000;
             width: 50px;
@@ -119,11 +139,17 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
+
 <body>
     <!-- Page loader -->
     <div id="pageLoader">
@@ -138,7 +164,7 @@
             <div class="card-body">
                 <!-- Loader for fetching data -->
                 <div id="fetchLoader"></div>
-                
+
                 <div class="form-group">
                     <textarea id="jsonInput" placeholder="Paste JSON here..." class="form-control"></textarea>
                 </div>
@@ -148,17 +174,47 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <textarea id="output" class="form-control" placeholder="Selected property value will appear here..."></textarea>
+                    <textarea id="output" class="form-control"
+                        placeholder="Selected property value will appear here..."></textarea>
                 </div>
                 <div class="form-row">
                     <div class="col">
-                        <button id="loadJson" onclick="loadJson()" class="btn btn-primary btn-block">Load JSON from API</button>
+                        <button id="loadJson" onclick="loadJson()" class="btn btn-primary btn-block">Load JSON from
+                            API</button>
                     </div>
                     <div class="col">
                         <button id="isOnEdit" onclick="save()" class="btn btn-warning btn-block">Update JSON</button>
                     </div>
                     <div class="col">
-                        <button id="sendJson" onclick="sendJson()" class="btn btn-success btn-block">Send JSON via PUT</button>
+                        <button id="sendJson" onclick="sendJson()" class="btn btn-success btn-block">Send JSON via
+                            PUT</button>
+                    </div>
+                </div>
+
+                <br />
+                <div class="form-group row">
+                    <label class="col-sm-2 col-form-label" for="ReadTextBox">Read Key Name</label>
+                    <div class="col-sm-6">
+                        <input type="text" class="form-control" id="ReadTextBox" value="Analyzer:Assistants:Prompts2" />
+                    </div>
+                    <div class="col-sm-4">
+                        <select class="form-control" id="ReadLabel">
+                            <option>Local</option>
+                            <option>Development</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-sm-2 col-form-label" for="WriteTextBox">Write Key Name</label>
+                    <div class="col-sm-6">
+                        <input type="text" class="form-control" id="WriteTextBox"
+                            value="Analyzer:Assistants:Prompts2" />
+                    </div>
+                    <div class="col-sm-4">
+                        <select class="form-control" id="WriteLabel">
+                            <option>Local</option>
+                            <option>Development</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -185,13 +241,16 @@
         });
 
         function loadJson() {
-            const url = 'https://service-catalog-dev-infra.internal.tenbis.cloud/api/Configuration/Analyzer%3AAssistants%3APrompts2/label/Local?secret=zzzqqqaaa12x&api-version=1';
+            const readTextBox = document.getElementById('ReadTextBox').value;
+            const readLabel = document.getElementById('ReadLabel').value;
+
+            const url = `https://service-catalog-dev-infra.internal.tenbis.cloud/api/Configuration/${readTextBox}/label/${readLabel}?secret=zzzqqqaaa12x&api-version=1`;
             showPageLoader();
 
             fetch(url)
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error('Network response was not ok ' + response.statusText);
+                        throw new Error('Network response was not ok ' + JSON.stringify(response));
                     }
                     return response.json();
                 })
@@ -199,11 +258,31 @@
                     editor.setValue(data);
                 })
                 .catch(error => {
-                    console.error('There has been a problem with your fetch operation:', error);
+                    showError(error);
                 })
                 .finally(() => {
                     hidePageLoader();
                 });
+        }
+
+        function showError(message) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: message,
+                confirmButtonText: 'OK'
+            });
+
+        }
+
+        function showOk(message) {
+            Swal.fire({
+                position: "top-start",
+                icon: "success",
+                title: message,
+                showConfirmButton: false,
+                timer: 1200
+            });
         }
 
         function save() {
@@ -217,7 +296,11 @@
         }
 
         function sendJson() {
-            const url = 'https://service-catalog-dev-infra.internal.tenbis.cloud/api/Configuration/Analyzer%3AAssistants%3APrompts2?secret=zzzqqqaaa12x&label=Local&api-version=1';
+            const writeTextBox = document.getElementById('WriteTextBox').value;
+            const writeLabel = document.getElementById('WriteLabel').value;
+
+            const url = `https://service-catalog-dev-infra.internal.tenbis.cloud/api/Configuration/${writeTextBox}?secret=zzzqqqaaa12x&label=${writeLabel}&api-version=1`;
+
             const jsonString = JSON.stringify(editor.getValue());
 
             showPageLoader();
@@ -229,25 +312,25 @@
                 },
                 body: jsonString
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok ' + response.statusText);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Success:', data);
-                alert('JSON sent successfully!');
-            })
-            .catch(error => {
-                console.error('There has been a problem with your fetch operation:', error);
-            })
-            .finally(() => {
-                hidePageLoader();
-            });
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Success:', data);
+                    showOk('JSON sent successfully!');
+                })
+                .catch(error => {
+                    showError('There has been a problem with your fetch operation:', error);
+                })
+                .finally(() => {
+                    hidePageLoader();
+                });
         }
 
-        editor.on('change', function() {
+        editor.on('change', function () {
             try {
                 const jsonObject = JSON.parse(editor.getValue());
                 populatePropertySelect(jsonObject);
@@ -258,7 +341,7 @@
             }
         });
 
-        propertySelect.addEventListener('change', function() {
+        propertySelect.addEventListener('change', function () {
             const jsonInput = editor.getValue();
             const selectedProperty = propertySelect.value;
 
@@ -295,7 +378,7 @@
         }
 
         // Toggle full-screen mode on double-click
-        outputEditor.on('dblclick', function() {
+        outputEditor.on('dblclick', function () {
             if (outputEditor.getWrapperElement().classList.contains('CodeMirror-fullscreen')) {
                 outputEditor.getWrapperElement().classList.remove('CodeMirror-fullscreen');
             } else {
@@ -305,7 +388,7 @@
         });
 
         // Keyboard shortcut (F11) for full-screen mode
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (e.key === 'F1') {
                 e.preventDefault();
                 outputEditor.getWrapperElement().classList.toggle('CodeMirror-fullscreen');
@@ -314,10 +397,52 @@
         });
 
         // Initialization on page load
-        window.onload = function() {
+        window.onload = function () {
             hidePageLoader(); // Ensure page loader is hidden initially
         };
 
+        document.addEventListener('DOMContentLoaded', function () {
+            // Load saved values from local storage
+            const readTextBox = document.getElementById('ReadTextBox');
+            const readLabel = document.getElementById('ReadLabel');
+            const writeTextBox = document.getElementById('WriteTextBox');
+            const writeLabel = document.getElementById('WriteLabel');
+
+            if (localStorage.getItem('readTextBox')) {
+                readTextBox.value = localStorage.getItem('readTextBox');
+            }
+
+            if (localStorage.getItem('readLabel')) {
+                readLabel.value = localStorage.getItem('readLabel');
+            }
+
+            if (localStorage.getItem('writeTextBox')) {
+                writeTextBox.value = localStorage.getItem('writeTextBox');
+            }
+
+            if (localStorage.getItem('writeLabel')) {
+                writeLabel.value = localStorage.getItem('writeLabel');
+            }
+
+            // Save values to local storage on change
+            readTextBox.addEventListener('input', function () {
+                localStorage.setItem('readTextBox', readTextBox.value);
+            });
+
+            readLabel.addEventListener('change', function () {
+                localStorage.setItem('readLabel', readLabel.value);
+            });
+
+            writeTextBox.addEventListener('input', function () {
+                localStorage.setItem('writeTextBox', writeTextBox.value);
+            });
+
+            writeLabel.addEventListener('change', function () {
+                localStorage.setItem('writeLabel', writeLabel.value);
+            });
+        });
+
     </script>
 </body>
+
 </html>
