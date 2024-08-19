@@ -217,6 +217,13 @@
                         </select>
                     </div>
                 </div>
+
+                <div class="form-group row">
+                    <label class="col-sm-2 col-form-label" for="PasswordTextBox">Password</label>
+                    <div class="col-sm-10">
+                        <input type="password" class="form-control" id="PasswordTextBox" value="" />
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -243,14 +250,15 @@
         function loadJson() {
             const readTextBox = document.getElementById('ReadTextBox').value;
             const readLabel = document.getElementById('ReadLabel').value;
+            const passwordTextBox = document.getElementById('PasswordTextBox').value;
 
-            const url = `https://service-catalog-dev-infra.internal.tenbis.cloud/api/Configuration/${readTextBox}/label/${readLabel}?secret=zzzqqqaaa12x&api-version=1`;
+            const url = `https://service-catalog-dev-infra.internal.tenbis.cloud/api/Configuration/${readTextBox}/label/${readLabel}?secret=${passwordTextBox}&api-version=1`;
             showPageLoader();
 
             fetch(url)
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error('Network response was not ok ' + JSON.stringify(response));
+                        throw new Error(`Network response was not ok ${response.status} ${response.statusText}`);
                     }
                     return response.json();
                 })
@@ -296,10 +304,12 @@
         }
 
         function sendJson() {
+            const passwordTextBox = document.getElementById('PasswordTextBox').value;
+
             const writeTextBox = document.getElementById('WriteTextBox').value;
             const writeLabel = document.getElementById('WriteLabel').value;
 
-            const url = `https://service-catalog-dev-infra.internal.tenbis.cloud/api/Configuration/${writeTextBox}?secret=zzzqqqaaa12x&label=${writeLabel}&api-version=1`;
+            const url = `https://service-catalog-dev-infra.internal.tenbis.cloud/api/Configuration/${writeTextBox}?secret=${passwordTextBox}&label=${writeLabel}&api-version=1`;
 
             const jsonString = JSON.stringify(editor.getValue());
 
@@ -314,7 +324,7 @@
             })
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error('Network response was not ok ' + response.statusText);
+                        throw new Error(`Network response was not ok ${response.status} ${response.statusText}`);
                     }
                     return response.json();
                 })
@@ -323,7 +333,7 @@
                     showOk('JSON sent successfully!');
                 })
                 .catch(error => {
-                    showError('There has been a problem with your fetch operation:', error);
+                    showError('There has been a problem with your fetch operation: ' + error);
                 })
                 .finally(() => {
                     hidePageLoader();
@@ -406,6 +416,7 @@
             const readTextBox = document.getElementById('ReadTextBox');
             const readLabel = document.getElementById('ReadLabel');
             const writeTextBox = document.getElementById('WriteTextBox');
+            const passwordTextBox = document.getElementById('PasswordTextBox');
             const writeLabel = document.getElementById('WriteLabel');
 
             if (localStorage.getItem('readTextBox')) {
@@ -420,6 +431,10 @@
                 writeTextBox.value = localStorage.getItem('writeTextBox');
             }
 
+            
+            if (localStorage.getItem('passwordTextBox')) {
+                passwordTextBox.value = localStorage.getItem('passwordTextBox');
+            }
             if (localStorage.getItem('writeLabel')) {
                 writeLabel.value = localStorage.getItem('writeLabel');
             }
@@ -435,6 +450,10 @@
 
             writeTextBox.addEventListener('input', function () {
                 localStorage.setItem('writeTextBox', writeTextBox.value);
+            });
+
+            passwordTextBox.addEventListener('input', function () {
+                localStorage.setItem('passwordTextBox', passwordTextBox.value);
             });
 
             writeLabel.addEventListener('change', function () {
